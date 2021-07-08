@@ -93,7 +93,9 @@ private:
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
 	std::vector<VkImageView> swapChainImageViews;
+	VkRenderPass renderPass;
 	VkPipelineLayout pipelineLayout;
+	
 
 	// memeber functions
 	void initWindow()
@@ -113,6 +115,7 @@ private:
 		createLogicalDevice();
 		createSwapChain();
 		createImageViews();
+		createRenderPass();
 		createGraphicsPipeline();
 	}
 
@@ -127,6 +130,7 @@ private:
 	void cleanup() 
 	{
 		vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+		vkDestroyRenderPass(device, renderPass, nullptr);
 		for (auto imageView : swapChainImageViews)
 		{
 			vkDestroyImageView(device, imageView, nullptr);
@@ -712,6 +716,43 @@ private:
 
 		return shaderModule;
 	}
+	
+	void createRenderPass()
+	{
+		VkAttachmentDescription colorAttachment{
+			.format = swapChainImageFormat,
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+		};
+
+		VkAttachmentReference colorAttachmentRef{};
+		colorAttachmentRef.attachment = 0;
+		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpass{};
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorAttachmentRef;
+
+		VkRenderPassCreateInfo renderPassInfo {
+			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+			.attachmentCount = 1,
+			.pAttachments = &colorAttachment,
+			.subpassCount = 1,
+			.pSubpasses = &subpass,
+		};
+
+		if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
+		{
+			throw std::runtime_error("failed to create render pass!");
+		}
+	}
+
 	
 	static std::vector<char> readFile(const std::string& filename)
 	{
