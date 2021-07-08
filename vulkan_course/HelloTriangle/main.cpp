@@ -93,6 +93,7 @@ private:
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
 	std::vector<VkImageView> swapChainImageViews;
+	VkPipelineLayout pipelineLayout;
 
 	// memeber functions
 	void initWindow()
@@ -125,6 +126,7 @@ private:
 
 	void cleanup() 
 	{
+		vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 		for (auto imageView : swapChainImageViews)
 		{
 			vkDestroyImageView(device, imageView, nullptr);
@@ -612,6 +614,84 @@ private:
 		fragShaderStageInfo.pName = "main";
 
 		VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+		
+		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+		vertexInputInfo.vertexBindingDescriptionCount = 0;
+		vertexInputInfo.pVertexBindingDescriptions = nullptr; // optional
+		vertexInputInfo.vertexAttributeDescriptionCount = 0;
+		vertexInputInfo.pVertexAttributeDescriptions = nullptr; // optional
+
+		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = (float) swapChainExtent.width;
+		viewport.height = (float) swapChainExtent.height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		VkRect2D scissor{.offset = {0, 0}, .extent = swapChainExtent};
+
+		VkPipelineViewportStateCreateInfo viewportState{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+			.viewportCount = 1,
+			.pViewports = &viewport,
+			.scissorCount = 1,
+			.pScissors = &scissor,
+		};
+
+		VkPipelineRasterizationStateCreateInfo rasterizer{};
+		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+		rasterizer.depthClampEnable = VK_FALSE;
+		rasterizer.rasterizerDiscardEnable = VK_FALSE;
+		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+		rasterizer.lineWidth = 1.0f;
+		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterizer.depthBiasEnable = VK_FALSE;
+		rasterizer.depthBiasConstantFactor = 0.0f; // optional
+		rasterizer.depthBiasClamp = 0.0f; // optional
+		rasterizer.depthBiasSlopeFactor = 0.0f; // optional
+		
+		VkPipelineMultisampleStateCreateInfo multisampling{};
+		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+		multisampling.sampleShadingEnable = VK_FALSE;
+		multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+		multisampling.minSampleShading = 1.0f; // optional
+		multisampling.pSampleMask = nullptr;
+		multisampling.alphaToCoverageEnable = VK_FALSE; // optional
+		multisampling.alphaToOneEnable = VK_FALSE; // OPTIONAL
+		
+
+		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+			colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+			colorBlendAttachment.blendEnable = VK_FALSE;
+			colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // optional
+			colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // optional
+			colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD; // optional
+			colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // optional
+			colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // optional
+			colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+		
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+			pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+			pipelineLayoutInfo.setLayoutCount = 0; // optional
+			pipelineLayoutInfo.pSetLayouts = nullptr; // optional
+			pipelineLayoutInfo.pushConstantRangeCount = 0; // optional
+			pipelineLayoutInfo.pPushConstantRanges = nullptr; // optional
+		
+
+		if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
+		{
+			throw std::runtime_error("failed to create pipeline layout!");
+		}
+
 		
 		vkDestroyShaderModule(device, fragShaderModule, nullptr);
 		vkDestroyShaderModule(device, vertShaderModule, nullptr);
